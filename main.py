@@ -4,65 +4,72 @@ from pydantic import BaseModel
 from chat import generate_response
 from classifier import is_supported_question
 
-app = FastAPI()
+app = FastAPI(title="MentorAI Backend")
 
-
+# =========================
+# CORS (VERY IMPORTANT)
+# =========================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174",
-    ],
+    allow_origins=["*"],  # Hugging Face requires this
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# =========================
+# SESSION MEMORY (LIGHT)
+# =========================
 sessions = {}
+MAX_MESSAGES = 6
 
 class ChatRequest(BaseModel):
     session_id: str
     message: str
 
+# =========================
+# HEALTH CHECK
+# =========================
+@app.get("/")
+def home():
+    return {"status": "MentorAI backend running"}
+
+# =========================
+# CHAT ENDPOINT
+# =========================
 @app.post("/chat")
 def chat(req: ChatRequest):
     if not is_supported_question(req.message):
         return {
-            "response": "⚠️ This question is not supported. MentorAI only helps with learning-related questions."
+            "response": "⚠️ MentorAI only answers learning-related questions."
         }
 
     if req.session_id not in sessions:
         sessions[req.session_id] = []
 
-   
     sessions[req.session_id].append({
         "role": "user",
-        "content": req.message
+        "content": req.message.strip()
     })
 
-    
-    sessions[req.session_id] = sessions[req.session_id][-6:]
+    sessions[req.session_id] = sessions[req.session_id][-MAX_MESSAGES:]
 
-    
-    ai_response = generate_response(sessions[req.session_id])
+    ai_reply = generate_response(sessions[req.session_id])
 
-   
-    lines = ai_response.split("\n")
-    unique_lines = []
+    # Deduplicate lines
     seen = set()
-    for line in lines:
-        stripped = line.strip()
-        if stripped and stripped not in seen:
-            unique_lines.append(stripped)
-            seen.add(stripped)
-    ai_response = "\n".join(unique_lines)
+    clean_lines = []
+    for line in ai_reply.split("\n"):
+        line = line.strip()
+        if line and line not in seen:
+            seen.add(line)
+            clean_lines.append(line)
 
-    
+    final_reply = "\n".join(clean_lines)
+
     sessions[req.session_id].append({
         "role": "assistant",
-        "content": ai_response
+        "content": final_reply
     })
 
-    return {"response": ai_response}
+    return {"response": final_reply}
