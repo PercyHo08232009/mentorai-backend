@@ -43,4 +43,8 @@ def generate_response(messages):
         return data["choices"][0]["message"]["content"]
 
     except Exception as e:
+<<<<<<< HEAD
         return f"⚠️ AI service error: {str(e)}"
+=======
+        return f"⚠️ AI service error: {str(e)}"
+>>>>>>> 338342138b282483579892c59b03a2491140a888
