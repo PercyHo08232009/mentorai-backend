@@ -1,7 +1,7 @@
 import requests
 import os
 
-OPENROUTER_API_KEY = "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"
+OPENROUTER_API_KEY = "ENTER_YOUR_API_OPENROUTER_KEY"
 
 
 SYSTEM_PROMPT = """
@@ -18,7 +18,7 @@ Do not repeat points.
 def generate_response(messages):
     try:
         payload = {
-            "model": "xiaomi/mimo-v2-flash:free",
+            "model": "ENTER YOUR MODEL",
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 *messages
